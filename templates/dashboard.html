@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Secret Cloud</title>
+    <link rel="stylesheet" href="/assets/css/style2.css">
+</head>
+<body>
+    <h1>Welcome, {{ username }}!</h1>
+
+    <h2>Upload File</h2>
+    <form method="post" action="/upload" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <input type="submit" value="Upload">
+    </form>
+
+    <h2>My Files</h2>
+    <ul>
+        {% for filename in filenames %}
+            <li>
+                <a href="/download/{{ filename }}">{{ filename }}</a>
+                <span class="delete-btn"><a href="/delete/{{ filename }}">Delete</a></span>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <div class="top-right">
+        <a href="/create_user" class="btn">Create User</a> <!-- Добавленная кнопка -->
+        <a href="/logout" class="btn">Exit</a>
+    </div>
+
+   
+    <script src="/assets/js/script.js"></script>
+</body>
+</html>
