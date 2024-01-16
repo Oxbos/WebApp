@@ -1,0 +1,8 @@
+venv
+.vscode
+.env
+.vs
+env
+compose/data-1
+uploads
+file_storage/
