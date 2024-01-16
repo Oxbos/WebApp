@@ -1,0 +1,83 @@
+version: "3.7"
+
+# Settings and configurations that are common for all containers
+x-minio-common: &minio-common
+    image: quay.io/minio/minio:RELEASE.2023-09-30T07-02-29Z
+    command: |
+        server /data --console-address ":9001"
+    ports:
+        - "9000:9000"
+        - "9001:9001"
+    environment:
+        MINIO_ROOT_USER: root
+        MINIO_ROOT_PASSWORD: 244487e055cb15f2eca2285aa275f5d0
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+        interval: 30s
+        timeout: 20s
+        retries: 3
+
+services:
+    minio1:
+        <<: *minio-common
+        hostname: minio1
+        volumes:
+            - ./data-1:/data
+        restart: "always"
+    createbuckets:
+        image: minio/mc
+        depends_on:
+            - minio1
+        entrypoint: >
+            /bin/sh -c "
+            /usr/bin/mc alias set myminio http://minio1:9000 root 244487e055cb15f2eca2285aa275f5d0;
+            /usr/bin/mc mb myminio/uploads;
+            /usr/bin/mc policy set public myminio/uploads;
+            exit 0;
+            "
+    postgres:
+        container_name: postgres_container
+        image: postgres:14.8-alpine3.18
+        command:
+            - "postgres"
+            - "-c"
+            - "max_connections=50"
+            # ... другие параметры конфигурации
+        environment:
+            POSTGRES_DB: "admindb"
+            POSTGRES_USER: "admin"
+            POSTGRES_PASSWORD: "admin"
+            PGDATA: "/var/lib/postgresql/data/pgdata"
+        ports:
+            - "5432:5432"
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U habrpguser -d habrdb"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+        restart: unless-stopped
+        deploy:
+            resources:
+                limits:
+                    cpus: '1'
+                    memory: 4G
+        networks:
+            - postgres
+
+    pgadmin:
+        container_name: pgadmin_container
+        image: dpage/pgadmin4:7.2
+        environment:
+            PGADMIN_DEFAULT_EMAIL: "admin@web.com"
+            PGADMIN_DEFAULT_PASSWORD: "admin"
+            PGADMIN_CONFIG_SERVER_MODE: "False"
+        ports:
+            - "6060:80"
+        restart: unless-stopped
+        networks:
+            - postgres
+
+networks:
+    postgres:
+        driver: bridge
